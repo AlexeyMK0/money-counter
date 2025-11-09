@@ -10,7 +10,7 @@ CREATE TABLE `transaction_category` (
 
 CREATE TABLE `transaction` (
   `id` integer PRIMARY KEY AUTOINCREMENT,
-  `created_at` timestamp NOT NULL,
+  `created_at` integer NOT NULL,
   `sum` integer NOT NULL,
   'account_id' integer NOT NULL,
   'category_id' integer NOT NULL,
