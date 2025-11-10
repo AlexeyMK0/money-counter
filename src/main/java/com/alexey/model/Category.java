@@ -1,6 +1,11 @@
 package com.alexey.model;
 
 public class Category {
+
+    public static Category Unknown() {
+        return new Category(0, null);
+    }
+
     private final int id;
 
     private final String name;

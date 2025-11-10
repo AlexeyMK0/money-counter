@@ -11,7 +11,7 @@ CREATE TABLE `transaction_category` (
 CREATE TABLE `transaction` (
   `id` integer PRIMARY KEY AUTOINCREMENT,
   `created_at` integer NOT NULL,
-  `sum` integer NOT NULL,
+  `sum` TEXT NOT NULL,
   'account_id' integer NOT NULL,
   'category_id' integer NOT NULL,
   FOREIGN KEY(`account_id`) REFERENCES `account` (`id`),

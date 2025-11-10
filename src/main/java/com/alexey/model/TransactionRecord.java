@@ -1,6 +1,7 @@
 package com.alexey.model;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 public class TransactionRecord {
@@ -11,14 +12,14 @@ public class TransactionRecord {
 
     private final BigDecimal moneyAmount;
     private final Category category;
-    private LocalDateTime dateTime;
+    private Instant dateTime;
 
-
-    public TransactionRecord(int id, Account account, BigDecimal moneyAmount, Category category) {
+    public TransactionRecord(int id, Account account, BigDecimal moneyAmount, Category category, Instant dateTime) {
         this.id = id;
         this.account = account;
         this.moneyAmount = moneyAmount;
         this.category = category;
+        this.dateTime = dateTime;
     }
 
     public int getId() {
@@ -31,6 +32,10 @@ public class TransactionRecord {
 
     public BigDecimal getMoney() {
         return moneyAmount;
+    }
+
+    public Instant getDateTime() {
+        return dateTime;
     }
 
     public Category getCategory() {
