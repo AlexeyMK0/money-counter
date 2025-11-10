@@ -1,28 +1,44 @@
 package com.alexey.model;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDateTime;
 
 public class TransactionRecord {
 
-    private int id;
-    private BigDecimal moneyAmount;
-    private String operationType;
+    private final int id;
 
-    public TransactionRecord(int id, BigDecimal moneyAmount, String operationType) {
+    private final Account account;
+
+    private final BigDecimal moneyAmount;
+    private final Category category;
+    private Instant dateTime;
+
+    public TransactionRecord(int id, Account account, BigDecimal moneyAmount, Category category, Instant dateTime) {
         this.id = id;
+        this.account = account;
         this.moneyAmount = moneyAmount;
-        this.operationType = operationType;
+        this.category = category;
+        this.dateTime = dateTime;
     }
 
     public int getId() {
         return id;
     }
 
+    public Account getAccount() {
+        return account;
+    }
+
     public BigDecimal getMoney() {
         return moneyAmount;
     }
 
-    public String getType() {
-        return operationType;
+    public Instant getDateTime() {
+        return dateTime;
+    }
+
+    public Category getCategory() {
+        return category;
     }
 }

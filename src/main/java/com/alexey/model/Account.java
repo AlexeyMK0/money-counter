@@ -5,12 +5,10 @@ import java.util.List;
 public class Account {
     private final int id;
     private final String name;
-    private List<TransactionRecord> transactions;
 
-    public Account(String name, int id, List<TransactionRecord> transactionRecords) {
+    public Account(int id, String name) {
         this.id = id;
         this.name = name;
-        transactions = transactionRecords;
     }
 
     public int getId() {
@@ -19,9 +17,5 @@ public class Account {
 
     public String getName() {
         return name;
-    }
-
-    public List<TransactionRecord> getTransactionRecords() {
-        return transactions;
     }
 }

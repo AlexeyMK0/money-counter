@@ -1,25 +1,29 @@
 package com.alexey.controller;
 
-import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import com.alexey.model.Account;
 import com.alexey.model.TransactionRecord;
-import com.alexey.repository.AccountRepository;
+import com.alexey.repository.DataBase;
 
 public class AppController {
 
-    private AccountRepository repository;
+    private final DataBase repository;
 
-    public AppController(AccountRepository repository) {
+    public AppController(DataBase repository) {
         this.repository = repository;
     }
 
-    public Account getAccount(int id) {
-        return repository.getAccount(id);
+    public Optional<Account> getAccount(int id) {
+        return repository.findAccount(id);
     }
 
-    public List<TransactionRecord> getTransactions(int accountId) {
-        return getAccount(accountId).getTransactionRecords();
+    public List<Account> getAccounts() {
+        return repository.getAccounts();
+    }
+
+    public List<TransactionRecord> getTransactions(Account account) {
+        return repository.getTransactionsByAccount(account);
     }
 }
