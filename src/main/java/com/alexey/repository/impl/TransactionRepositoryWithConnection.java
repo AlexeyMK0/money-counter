@@ -3,7 +3,7 @@ package com.alexey.repository.impl;
 import com.alexey.model.Account;
 import com.alexey.model.Category;
 import com.alexey.model.TransactionRecord;
-import com.alexey.repository.DataBase;
+import com.alexey.repository.TransactionRepository;
 import com.alexey.repository.impl.exceptions.DataAccessException;
 
 import java.math.BigDecimal;
@@ -20,133 +20,55 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-// TODO: decompose this class
-public final class DataBaseWithConnection implements DataBase {
+public final class TransactionRepositoryWithConnection implements TransactionRepository {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH:mm:ss");
-
-    private final Connection connection;
-
-    private static String accountSelectByIdQuery(int id) {
-        return String.format("SELECT id, account_name FROM account WHERE id = %d", id);
-    }
-
-    private static String allAccountsSelectQuery() {
-        return "SELECT * FROM account";
-    }
-
-    private static String categorySelectByIdQuery(int categoryId) {
-        return String.format("SELECT id, category_name FROM transaction_category WHERE id = %d", categoryId);
-    }
-
-    private static String allCategoriesSelectQuery() {
-        return "SELECT * FROM transaction_category";
-    }
 
     private static String transactionSelectWithAccountCategoryInfoByIdQuery(int transactionId) {
         return String.format(
-        """
-        SELECT t.id AS id, t.created_at AS created_at, t.sum AS sum,
-            t.account_id AS account_id, a.account_name AS account_name,
-            t.category_id AS category_id, tc.category_name AS category_name
-        FROM `transaction` AS t
-        JOIN account AS a
-            ON t.account_id = a.id
-        JOIN transaction_category AS tc
-            ON t.category_id = tc.id
-        WHERE t.id = %d
-        """, transactionId);
+                """
+                SELECT t.id AS id, t.created_at AS created_at, t.sum AS sum,
+                    t.account_id AS account_id, a.account_name AS account_name,
+                    t.category_id AS category_id, tc.category_name AS category_name
+                FROM `transaction` AS t
+                JOIN account AS a
+                    ON t.account_id = a.id
+                JOIN transaction_category AS tc
+                    ON t.category_id = tc.id
+                WHERE t.id = %d
+                """, transactionId);
     }
 
     private static String transactionSelectWithCategoryInfoByAccountQuery(Account account) {
         return String.format(
-        """
-        SELECT t.id AS id, t.created_at AS created_at, t.sum AS sum,
-            t.account_id AS account_id,
-            t.category_id AS category_id, tc.category_name AS category_name
-        FROM `transaction` AS t
-        JOIN transaction_category AS tc
-            ON t.category_id = tc.id
-        WHERE t.account_id = %d
-        """, account.getId()
+                """
+                SELECT t.id AS id, t.created_at AS created_at, t.sum AS sum,
+                    t.account_id AS account_id,
+                    t.category_id AS category_id, tc.category_name AS category_name
+                FROM `transaction` AS t
+                JOIN transaction_category AS tc
+                    ON t.category_id = tc.id
+                WHERE t.account_id = %d
+                """, account.getId()
         );
     }
     private static String transactionSelectWithAccountInfoByCategoryQuery(Category category) {
         return String.format(
-        """
-        SELECT t.id AS id, t.created_at AS created_at, t.sum AS sum,
-            t.account_id AS account_id, a.account_name AS account_name,
-            t.category_id AS category_id
-        FROM `transaction` AS t
-        JOIN account AS a
-            ON t.account_id = a.id
-        WHERE t.category_id = %d
-        """, category.getId()
+                """
+                SELECT t.id AS id, t.created_at AS created_at, t.sum AS sum,
+                    t.account_id AS account_id, a.account_name AS account_name,
+                    t.category_id AS category_id
+                FROM `transaction` AS t
+                JOIN account AS a
+                    ON t.account_id = a.id
+                WHERE t.category_id = %d
+                """, category.getId()
         );
     }
 
-    public DataBaseWithConnection(Connection connection) {
+    private final Connection connection;
+
+    public TransactionRepositoryWithConnection(Connection connection) {
         this.connection = Objects.requireNonNull(connection);
-    }
-
-
-    @Override
-    public Optional<Account> findAccount(int id) {
-        try {
-            Optional<Account> returnValue = Optional.empty();
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(accountSelectByIdQuery(id));
-            if (resultSet.next()) {
-                returnValue = Optional.of(parseAccount(resultSet));
-            }
-            return returnValue;
-        } catch (SQLException e) {
-            throw new DataAccessException("DataBase exception", e);
-        }
-    }
-
-    @Override
-    public List<Account> getAccounts() {
-        try {
-            var returnValue = new ArrayList<Account>();
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(allAccountsSelectQuery());
-            while (resultSet.next()) {
-                returnValue.add(parseAccount(resultSet));
-            }
-            return returnValue;
-        } catch (SQLException e) {
-            throw new DataAccessException("DataBase exception", e);
-        }
-    }
-
-    @Override
-    public Optional<Category> findCategory(int categoryId) {
-        try {
-            Optional<Category> returnValue = Optional.empty();
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(categorySelectByIdQuery(categoryId));
-            if (resultSet.next()) {
-                returnValue = Optional.of(parseCategory(resultSet));
-            }
-            return returnValue;
-        } catch (SQLException e) {
-            throw new DataAccessException("DataBase exception", e);
-        }
-    }
-
-    @Override
-    public List<Category> getCategories() {
-        try {
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(allCategoriesSelectQuery());
-            var returnValue = new ArrayList<Category>();
-            while (resultSet.next()) {
-                returnValue.add(parseCategory(resultSet));
-            }
-            return returnValue;
-        } catch (SQLException e) {
-            throw new DataAccessException("DataBase exception", e);
-        }
     }
 
     @Override
@@ -192,14 +114,6 @@ public final class DataBaseWithConnection implements DataBase {
         } catch (SQLException e) {
             throw new DataAccessException("DataBase exception", e);
         }
-    }
-
-    private Account parseAccount(ResultSet resultSet) throws SQLException {
-        return new Account(resultSet.getInt("id"), resultSet.getString("account_name"));
-    }
-
-    private Category parseCategory(ResultSet resultSet) throws SQLException {
-        return new Category(resultSet.getInt("id"), resultSet.getString("category_name"));
     }
 
     private Category createCategory(int id, String name) {
@@ -263,7 +177,6 @@ public final class DataBaseWithConnection implements DataBase {
         return BigDecimal.valueOf(resultSet.getLong(columnName));
     }
     private Instant parseTransactionDate(ResultSet resultSet, String columnName) throws SQLException {
-        // "YYYY-MM-DDThh:mm:ss"
         String tm = resultSet.getString(columnName);
         return LocalDateTime
                 .parse(tm, DATE_TIME_FORMATTER)
