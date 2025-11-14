@@ -1,15 +1,11 @@
 package com.alexey.repository.impl;
 
-import com.alexey.model.Account;
-import com.alexey.model.AccountInfo;
-import com.alexey.model.Category;
-import com.alexey.model.TransactionRecord;
+import com.alexey.model.*;
 import com.alexey.repository.AccountRepository;
 import com.alexey.repository.CategoryRepository;
 import com.alexey.repository.DataBase;
 import com.alexey.repository.TransactionRepository;
 
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -49,6 +45,9 @@ public final class DataBaseRepositoryAdapter implements DataBase {
     public List<Category> getCategories() {
         return categoryRepository.getCategories();
     }
+
+    @Override
+    public Category insertCategory(CategoryInfo categoryInfo) { return categoryRepository.insertCategory(categoryInfo); }
 
     @Override
     public Optional<TransactionRecord> findTransactionById(int transactionId) {

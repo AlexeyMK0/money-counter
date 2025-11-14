@@ -15,6 +15,10 @@ public class Category {
         this.name = name;
     }
 
+    public static Category fromCategoryInfoAndId(CategoryInfo categoryInfo, int id) {
+        return new Category(id, categoryInfo.name());
+    }
+
     public int getId() {
         return id;
     }
