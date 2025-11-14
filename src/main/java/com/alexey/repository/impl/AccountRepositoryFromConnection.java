@@ -1,13 +1,12 @@
 package com.alexey.repository.impl;
 
 import com.alexey.model.Account;
+import com.alexey.model.AccountInfo;
 import com.alexey.repository.AccountRepository;
 import com.alexey.repository.impl.exceptions.DataAccessException;
+import com.alexey.repository.impl.exceptions.KeyNotReturnedFromDataBaseException;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -17,6 +16,8 @@ public final class AccountRepositoryFromConnection implements AccountRepository 
 
     private final Connection connection;
 
+    private static final String insertAccountQuery = "INSERT INTO account(account_name) VALUES(?)";
+
     private static String accountSelectByIdQuery(int id) {
         return String.format("SELECT id, account_name FROM account WHERE id = %d", id);
     }
@@ -24,6 +25,7 @@ public final class AccountRepositoryFromConnection implements AccountRepository 
     private static String allAccountsSelectQuery() {
         return "SELECT * FROM account";
     }
+
 
     public AccountRepositoryFromConnection(Connection connection) {
         this.connection = Objects.requireNonNull(connection);
@@ -56,6 +58,24 @@ public final class AccountRepositoryFromConnection implements AccountRepository 
             return returnValue;
         } catch (SQLException e) {
             throw new DataAccessException("DataBase exception", e);
+        }
+    }
+
+    @Override
+    public Account insertAccount(AccountInfo accountInfo) {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                insertAccountQuery, Statement.RETURN_GENERATED_KEYS
+            );
+            preparedStatement.setString(1, accountInfo.name());
+            preparedStatement.executeUpdate();
+            ResultSet resultSet = preparedStatement.getGeneratedKeys();
+            if (!resultSet.next()) {
+                throw new KeyNotReturnedFromDataBaseException();
+            }
+            return Account.fromAccountInfoAndId(accountInfo, resultSet.getInt(1));
+        } catch (SQLException e) {
+            throw new DataAccessException("Error while inserting " + accountInfo + ": " + e);
         }
     }
 

@@ -1,6 +1,7 @@
 package com.alexey.repository.impl;
 
 import com.alexey.model.Account;
+import com.alexey.model.AccountInfo;
 import com.alexey.model.Category;
 import com.alexey.model.TransactionRecord;
 import com.alexey.repository.AccountRepository;
@@ -35,6 +36,9 @@ public final class DataBaseRepositoryAdapter implements DataBase {
     public List<Account> getAccounts() {
         return accountRepository.getAccounts();
     }
+
+    @Override
+    public Account insertAccount(AccountInfo accountInfo) { return accountRepository.insertAccount(accountInfo); }
 
     @Override
     public Optional<Category> findCategory(int categoryId) {
