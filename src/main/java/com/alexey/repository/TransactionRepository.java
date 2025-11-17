@@ -2,6 +2,7 @@ package com.alexey.repository;
 
 import com.alexey.model.Account;
 import com.alexey.model.Category;
+import com.alexey.model.TransactionInfo;
 import com.alexey.model.TransactionRecord;
 
 import java.util.List;
@@ -13,4 +14,6 @@ public interface TransactionRepository {
     List<TransactionRecord> getTransactionsByAccount(Account account);
 
     List<TransactionRecord> getTransactionsByCategory(Category category);
+
+    TransactionRecord insertTransaction(TransactionInfo transactionInfo);
 }

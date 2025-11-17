@@ -11,6 +11,10 @@ public class Account {
         this.name = name;
     }
 
+    public static Account fromAccountInfoAndId(AccountInfo info, int id) {
+        return new Account(id, info.name());
+    }
+
     public int getId() {
         return id;
     }

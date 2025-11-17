@@ -22,6 +22,10 @@ public class TransactionRecord {
         this.dateTime = dateTime;
     }
 
+    public static TransactionRecord fromInfoAndId(TransactionInfo info, int id) {
+        return new TransactionRecord(id, info.account(), info.moneyAmount(), info.category(), info.dateTime());
+    }
+
     public int getId() {
         return id;
     }
