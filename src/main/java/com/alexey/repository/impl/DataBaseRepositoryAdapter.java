@@ -63,4 +63,9 @@ public final class DataBaseRepositoryAdapter implements DataBase {
     public List<TransactionRecord> getTransactionsByCategory(Category category) {
         return transactionRepository.getTransactionsByCategory(category);
     }
+
+    @Override
+    public TransactionRecord insertTransaction(TransactionInfo transactionInfo) {
+        return transactionRepository.insertTransaction(transactionInfo);
+    }
 }

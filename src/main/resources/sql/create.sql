@@ -1,11 +1,11 @@
 CREATE TABLE `account` (
   `id` integer PRIMARY KEY AUTOINCREMENT,
-  `account_name` varchar(255)
+  `account_name` varchar(255) NOT NULL
 );
 
 CREATE TABLE `transaction_category` (
   `id` integer PRIMARY KEY AUTOINCREMENT,
-  `category_name` varchar(255)
+  `category_name` varchar(255) NOT NULL
 );
 
 CREATE TABLE `transaction` (

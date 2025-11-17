@@ -2,17 +2,19 @@ package com.alexey.repository.impl;
 
 import com.alexey.model.Account;
 import com.alexey.model.Category;
+import com.alexey.model.TransactionInfo;
 import com.alexey.model.TransactionRecord;
+import com.alexey.repository.Parsers.BigDecimalParser;
+import com.alexey.repository.Parsers.FromLongFixedPointBigDecimalParser;
 import com.alexey.repository.TransactionRepository;
 import com.alexey.repository.impl.exceptions.DataAccessException;
+import com.alexey.repository.impl.exceptions.KeyNotReturnedFromDataBaseException;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -21,7 +23,9 @@ import java.util.Objects;
 import java.util.Optional;
 
 public final class TransactionRepositoryWithConnection implements TransactionRepository {
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH:mm:ss");
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("uuuu-MM-dd_HH:mm:ss");
+
+    public static final String insertTransactionQuery = "INSERT INTO `transaction`(created_at, sum, account_id, category_id) VALUES(?,?,?,?)";
 
     private static String transactionSelectWithAccountCategoryInfoByIdQuery(int transactionId) {
         return String.format(
@@ -32,7 +36,7 @@ public final class TransactionRepositoryWithConnection implements TransactionRep
                 FROM `transaction` AS t
                 JOIN account AS a
                     ON t.account_id = a.id
-                JOIN transaction_category AS tc
+                LEFT JOIN transaction_category AS tc
                     ON t.category_id = tc.id
                 WHERE t.id = %d
                 """, transactionId);
@@ -45,7 +49,7 @@ public final class TransactionRepositoryWithConnection implements TransactionRep
                     t.account_id AS account_id,
                     t.category_id AS category_id, tc.category_name AS category_name
                 FROM `transaction` AS t
-                JOIN transaction_category AS tc
+                LEFT JOIN transaction_category AS tc
                     ON t.category_id = tc.id
                 WHERE t.account_id = %d
                 """, account.getId()
@@ -67,8 +71,15 @@ public final class TransactionRepositoryWithConnection implements TransactionRep
 
     private final Connection connection;
 
+    private final BigDecimalParser bigDecimalParser;
+
     public TransactionRepositoryWithConnection(Connection connection) {
+        this(connection, new FromLongFixedPointBigDecimalParser(2));
+    }
+
+    public TransactionRepositoryWithConnection(Connection connection, BigDecimalParser bigDecimalParser) {
         this.connection = Objects.requireNonNull(connection);
+        this.bigDecimalParser = Objects.requireNonNull(bigDecimalParser);
     }
 
     @Override
@@ -116,21 +127,30 @@ public final class TransactionRepositoryWithConnection implements TransactionRep
         }
     }
 
-    private Category createCategory(int id, String name) {
-        if (name == null) {
-            return Category.Unknown();
+    @Override
+    public TransactionRecord insertTransaction(TransactionInfo transactionInfo) {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                insertTransactionQuery, Statement.RETURN_GENERATED_KEYS
+            );
+            fillTransactionInsertStatement(preparedStatement, transactionInfo);
+            preparedStatement.executeUpdate();
+            ResultSet resultSet = preparedStatement.getGeneratedKeys();
+            if (!resultSet.next()) {
+                throw new KeyNotReturnedFromDataBaseException();
+            }
+            return TransactionRecord.fromInfoAndId(transactionInfo, resultSet.getInt(1));
+        } catch (SQLException e) {
+            throw new DataAccessException("Error while inserting " + transactionInfo + ": " + e);
         }
-        return new Category(id, name);
     }
 
     private TransactionRecord parseTransactionByIdFromAllJoinedQuery(ResultSet resultSet) throws SQLException {
         int id = resultSet.getInt("id");
         Instant time = parseTransactionDate(resultSet, "created_at");
         BigDecimal sum = parseTransactionSum(resultSet, "sum");
-        Account account = new Account(
-                resultSet.getInt("account_id"), resultSet.getString("account_name"));
-        Category category = createCategory(
-                resultSet.getInt("category_id"), resultSet.getString("category_name"));
+        Account account = parseAccount(resultSet, "account_name", "account_id");
+        Category category = parseCategory(resultSet, "category_name", "category_id");
 
         return new TransactionRecord(
                 id,
@@ -145,8 +165,7 @@ public final class TransactionRepositoryWithConnection implements TransactionRep
         int id = resultSet.getInt("id");
         Instant time = parseTransactionDate(resultSet, "created_at");
         BigDecimal sum = parseTransactionSum(resultSet, "sum");
-        Category category = createCategory(
-                resultSet.getInt("category_id"), resultSet.getString("category_name"));
+        Category category = parseCategory(resultSet, "category_name", "category_id");
 
         return new TransactionRecord(
                 id,
@@ -161,8 +180,7 @@ public final class TransactionRepositoryWithConnection implements TransactionRep
         int id = resultSet.getInt("id");
         Instant time = parseTransactionDate(resultSet, "created_at");
         BigDecimal sum = parseTransactionSum(resultSet, "sum");
-        Account account = new Account(
-                resultSet.getInt("account_id"), resultSet.getString("account_name"));
+        Account account = parseAccount(resultSet, "account_name", "account_id");
 
         return new TransactionRecord(
                 id,
@@ -173,14 +191,32 @@ public final class TransactionRepositoryWithConnection implements TransactionRep
         );
     }
 
-    private BigDecimal parseTransactionSum(ResultSet resultSet, String columnName) throws  SQLException {
-        return BigDecimal.valueOf(resultSet.getLong(columnName));
+    private Category parseCategory(ResultSet resultSet, String nameColumnName, String idColumnName) throws SQLException {
+        Integer id = resultSet.getObject(idColumnName, Integer.class);
+        String categoryName = resultSet.getString(nameColumnName);
+        return new Category(id, categoryName);
     }
+
+    private Account parseAccount(ResultSet resultSet, String nameColumnName, String idColumnName) throws  SQLException {
+        return new Account(resultSet.getInt(idColumnName), resultSet.getString(nameColumnName));
+    }
+
+    private BigDecimal parseTransactionSum(ResultSet resultSet, String columnName) throws  SQLException {
+        return bigDecimalParser.parseFromResultSet(resultSet, columnName);
+    }
+
     private Instant parseTransactionDate(ResultSet resultSet, String columnName) throws SQLException {
         String tm = resultSet.getString(columnName);
         return LocalDateTime
                 .parse(tm, DATE_TIME_FORMATTER)
                 .atZone(ZoneOffset.UTC)
                 .toInstant();
+    }
+
+    private void fillTransactionInsertStatement(PreparedStatement statement, TransactionInfo transactionInfo) throws SQLException {
+        statement.setString(1, DATE_TIME_FORMATTER.format(transactionInfo.dateTime().atZone(ZoneId.systemDefault())));
+        bigDecimalParser.writeToStatement(statement, 2, transactionInfo.moneyAmount());
+        statement.setInt(3, transactionInfo.account().getId());
+        statement.setInt(4, transactionInfo.category().getId());
     }
 }
