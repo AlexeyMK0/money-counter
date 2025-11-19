@@ -1,29 +1,18 @@
 package com.alexey.controller;
 
-import java.util.List;
-import java.util.Optional;
-
 import com.alexey.model.Account;
+import com.alexey.model.Category;
+import com.alexey.model.TransactionInfo;
 import com.alexey.model.TransactionRecord;
-import com.alexey.repository.DataBase;
 
-public class AppController {
+import java.util.List;
 
-    private final DataBase repository;
+public interface AppController {
+    List<Account> getAllAccounts();
 
-    public AppController(DataBase repository) {
-        this.repository = repository;
-    }
+    List<Category> getAllCategories();
 
-    public Optional<Account> getAccount(int id) {
-        return repository.findAccount(id);
-    }
+    List<TransactionRecord> getTransactionsByAccount(Account account);
 
-    public List<Account> getAccounts() {
-        return repository.getAccounts();
-    }
-
-    public List<TransactionRecord> getTransactions(Account account) {
-        return repository.getTransactionsByAccount(account);
-    }
+    TransactionRecord insertNewTransaction(TransactionInfo transactionInfo);
 }
